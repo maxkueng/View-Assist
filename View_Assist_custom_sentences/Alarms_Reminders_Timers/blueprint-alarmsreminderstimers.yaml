@@ -215,9 +215,20 @@ trigger:
 condition: []
 action:
   - variables:
-      target_satellite_device:
-        "{{ view_assist_entity(trigger.device_id) if trigger.platform
-        == 'conversation' else trigger.event.data.entity_id }}"
+      # Event triggers carry the device differently depending on the event:
+      # va_timer_* and viewassist events put entity_id directly on the data,
+      # while call_service events nest the caller's target under service_data.
+      # Use .get() throughout so a shape without the key yields nothing rather
+      # than an undefined-attribute warning on every trigger.
+      target_satellite_device: >-
+        {% if trigger.platform == 'conversation' %}
+          {{ view_assist_entity(trigger.device_id) }}
+        {% else %}
+          {% set data = trigger.event.data %}
+          {% set sd = data.get('service_data', {}) %}
+          {% set via_device = view_assist_entity(sd.get('device_id')) if sd.get('device_id') else '' %}
+          {{ data.get('entity_id') or sd.get('entity_id') or via_device or '' }}
+        {% endif %}
       target_mediaplayer_device: "{{ state_attr(target_satellite_device, 'mediaplayer_device')}}"
       target_satellite_device_type: "{{ state_attr(target_satellite_device, 'type')}}"
       spokenlanguage: !input spokenlanguage
