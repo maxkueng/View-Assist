@@ -34,6 +34,15 @@ blueprint:
       default: false
       selector:
         boolean: {}
+    alarm_on_all_devices:
+      name: Sound alarm on all devices showing the timer
+      description:
+        If enabled, an expiring timer sounds on every View Assist device whose
+        "Show timers from all devices" option is on, not only the device the
+        timer was set on. Dismiss and snooze then stop the alarm on all of them.
+      default: false
+      selector:
+        boolean: {}
     snooze_time:
       name: Snooze Time
       description:
@@ -227,6 +236,35 @@ action:
       vaca_alarm_switch: >-
         {% set mic_ent = state_attr(target_satellite_device, 'mic_device') %}
         {{ device_entities(device_id(mic_ent)) | select('match', '^switch\..*_alarm$') | first | default('') if mic_ent else '' }}
+      alarm_on_all_devices: !input alarm_on_all_devices
+      # The devices this timer is visible on: its owner, plus every VA device
+      # configured to show timers from all devices.
+      target_devices: >-
+        {% set ns = namespace(out=[target_satellite_device]) %}
+        {% if alarm_on_all_devices %}
+          {% for e in integration_entities('view_assist') | select('match', '^sensor\.') %}
+            {% if state_attr(e, 'show_all_timers') and e not in ns.out %}
+              {% set ns.out = ns.out + [e] %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ ns.out }}
+      # Per-device sound routing, resolved once so the repeat loops stay flat.
+      alarm_targets: >-
+        {% set ns = namespace(out=[]) %}
+        {% for e in target_devices %}
+          {% set mic = state_attr(e, 'mic_device') %}
+          {% set dev = device_id(mic) if mic else none %}
+          {% set is_vaca = ('vaca' in (device_attr(dev, 'identifiers') | string)) if dev else false %}
+          {% set sw = (device_entities(dev) | select('match', '^switch\..*_alarm$') | first | default('')) if dev else '' %}
+          {% set ns.out = ns.out + [{
+            'entity': e,
+            'use_onboard': use_vaca_onboard_sound and is_vaca and sw != '',
+            'switch': sw,
+            'mediaplayer': state_attr(e, 'mediaplayer_device')
+          }] %}
+        {% endfor %}
+        {{ ns.out }}
       translations:
         ca:
           responses:
@@ -365,34 +403,37 @@ action:
               - timerwarning
               - ringalarm
         sequence:
-          - action: view_assist.navigate
-            data:
-              device: "{{ target_satellite_device }}"
-              path: "{{ view }}"
-          - action: view_assist.set_state
-            target:
-              entity_id: "{{ target_satellite_device }}"
-            data:
-              mode: hold
-          - if:
-              - condition: template
-                value_template:
-                  "{% if trigger.id == 'ringalarm' %}true{% else %}false{%
-                  endif %}"
-            then:
-              - if:
-                  - condition: template
-                    value_template: >-
-                      {{ trigger_vaca_onboard }}
-                then:
-                  - action: switch.turn_on
-                    target:
-                      entity_id: "{{ vaca_alarm_switch }}"
-                else:
-                  - action: view_assist.sound_alarm
-                    data:
-                      entity_id: "{{ target_mediaplayer_device }}"
-                      media_file: "{{ alarmsound_path }}"
+          - repeat:
+              for_each: "{{ alarm_targets }}"
+              sequence:
+                - action: view_assist.navigate
+                  data:
+                    device: "{{ repeat.item.entity }}"
+                    path: "{{ view }}"
+                - action: view_assist.set_state
+                  target:
+                    entity_id: "{{ repeat.item.entity }}"
+                  data:
+                    mode: hold
+                - if:
+                    - condition: template
+                      value_template:
+                        "{% if trigger.id == 'ringalarm' %}true{% else %}false{%
+                        endif %}"
+                  then:
+                    - if:
+                        - condition: template
+                          value_template: >-
+                            {{ repeat.item.use_onboard }}
+                      then:
+                        - action: switch.turn_on
+                          target:
+                            entity_id: "{{ repeat.item.switch }}"
+                      else:
+                        - action: view_assist.sound_alarm
+                          data:
+                            entity_id: "{{ repeat.item.mediaplayer }}"
+                            media_file: "{{ alarmsound_path }}"
 
       - conditions:
           - condition: trigger
@@ -402,18 +443,21 @@ action:
           - variables:
               timer_id: "{{ trigger.event.data.timer_id }}"
 
-          - if:
-              - condition: template
-                value_template: >-
-                  {{ trigger_vaca_onboard }}
-            then:
-              - action: switch.turn_off
-                target:
-                  entity_id: "{{ vaca_alarm_switch }}"
-            else:
-              - action: view_assist.cancel_sound_alarm
-                data:
-                  entity_id: "{{ target_mediaplayer_device }}"
+          - repeat:
+              for_each: "{{ alarm_targets }}"
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: >-
+                        {{ repeat.item.use_onboard }}
+                  then:
+                    - action: switch.turn_off
+                      target:
+                        entity_id: "{{ repeat.item.switch }}"
+                  else:
+                    - action: view_assist.cancel_sound_alarm
+                      data:
+                        entity_id: "{{ repeat.item.mediaplayer }}"
           - action: view_assist.cancel_timer
             data:
               timer_id: "{{ timer_id }}"
@@ -441,18 +485,21 @@ action:
               new_time: "{{ snooze_time }} minutes"
               timer_id: "{{ trigger.event.data.timer_id }}"
               device_entity: "{{ trigger.event.data.entity_id }}"
-          - if:
-              - condition: template
-                value_template: >-
-                  {{ trigger_vaca_onboard }}
-            then:
-              - action: switch.turn_off
-                target:
-                  entity_id: "{{ vaca_alarm_switch }}"
-            else:
-              - action: view_assist.cancel_sound_alarm
-                data:
-                  entity_id: "{{ target_mediaplayer_device }}"
+          - repeat:
+              for_each: "{{ alarm_targets }}"
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: >-
+                        {{ repeat.item.use_onboard }}
+                  then:
+                    - action: switch.turn_off
+                      target:
+                        entity_id: "{{ repeat.item.switch }}"
+                  else:
+                    - action: view_assist.cancel_sound_alarm
+                      data:
+                        entity_id: "{{ repeat.item.mediaplayer }}"
           - action: view_assist.snooze_timer
             data:
               timer_id: "{{ timer_id }}"
@@ -498,9 +545,21 @@ action:
               - condition: template
                 value_template: '{% if timer_id != "" %}true{% endif %}'
             then:
-              - action: view_assist.cancel_sound_alarm
-                data:
-                  entity_id: "{{ target_mediaplayer_device }}"
+              - repeat:
+                  for_each: "{{ alarm_targets }}"
+                  sequence:
+                    - if:
+                        - condition: template
+                          value_template: >-
+                            {{ repeat.item.use_onboard }}
+                      then:
+                        - action: switch.turn_off
+                          target:
+                            entity_id: "{{ repeat.item.switch }}"
+                      else:
+                        - action: view_assist.cancel_sound_alarm
+                          data:
+                            entity_id: "{{ repeat.item.mediaplayer }}"
               - action: view_assist.cancel_timer
                 data:
                   timer_id: "{{ timer_id }}"
