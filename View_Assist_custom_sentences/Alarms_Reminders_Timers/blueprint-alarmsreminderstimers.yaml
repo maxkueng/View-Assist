@@ -488,11 +488,16 @@ action:
               - condition: template
                 value_template: "{{ (timer_count > 0 and not allow_hold_mode) or (timer_count == 0) }}"
             then:
-              - action: view_assist.set_state
-                target:
-                  entity_id: "{{ target_satellite_device }}"
-                data:
-                  mode: normal
+              # Release every device the alarm put into hold, not just the
+              # timer's owner.
+              - repeat:
+                  for_each: "{{ alarm_targets }}"
+                  sequence:
+                    - action: view_assist.set_state
+                      target:
+                        entity_id: "{{ repeat.item.entity }}"
+                      data:
+                        mode: normal
       - conditions:
           - condition: trigger
             id:
@@ -526,11 +531,18 @@ action:
               - condition: template
                 value_template: "{{ not allow_hold_mode }}"
             then:
-              - action: view_assist.set_state
-                target:
-                  entity_id: "{{ target_satellite_device }}"
-                data:
-                  mode: normal
+              # The alarm put every device in alarm_targets into hold; release
+              # the same set. Snooze never calls cancel_timer, so the global
+              # hold sweep in the cancel_timer_trigger branch cannot rescue
+              # devices left behind here.
+              - repeat:
+                  for_each: "{{ alarm_targets }}"
+                  sequence:
+                    - action: view_assist.set_state
+                      target:
+                        entity_id: "{{ repeat.item.entity }}"
+                      data:
+                        mode: normal
           - set_conversation_response: "{{ snooze_response.response }}"
       - conditions:
           - condition: trigger
@@ -592,11 +604,16 @@ action:
                   - condition: template
                     value_template: "{{ (timer_count > 0 and not allow_hold_mode) or (timer_count == 0) }}"
                 then:
-                  - action: view_assist.set_state
-                    target:
-                      entity_id: "{{ target_satellite_device }}"
-                    data:
-                      mode: normal
+                  # Release every device the alarm put into hold, not just the
+                  # device that was spoken to.
+                  - repeat:
+                      for_each: "{{ alarm_targets }}"
+                      sequence:
+                        - action: view_assist.set_state
+                          target:
+                            entity_id: "{{ repeat.item.entity }}"
+                          data:
+                            mode: normal
             else:
               - set_conversation_response: >
                   {{ translations[spokenlanguage]['responses']['named_timer_not_found'] }}
