@@ -68,7 +68,6 @@ blueprint:
         start_alert:
           name: Start Alert Variables
           description: The icon, text, and/or any other VA variables to set for the start event
-          default: ""
           selector:
             object:
           default:
@@ -119,7 +118,6 @@ blueprint:
         end_alert:
           name: End Alert
           description: The icon, text, and/or any other VA variables to set for the end event
-          default: ""
           selector:
             object:
           default:
