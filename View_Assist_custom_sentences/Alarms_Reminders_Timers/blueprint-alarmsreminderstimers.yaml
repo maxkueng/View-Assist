@@ -385,10 +385,15 @@ action:
               time: "{{ trigger.slots.when }}"
               name: '{{ trigger.slots.name if trigger.slots.name is defined else "" }}'
               language: "{{ trigger.user_input.language }}"
+          # Pass the entity already resolved above rather than the raw trigger
+          # device. view_assist_entity() handles devices that are not View
+          # Assist devices — such as a phone running the companion app — and
+          # set_timer cannot, so handing it the raw device id fails outright
+          # for anything that is not a View Assist device.
           - action: view_assist.set_timer
             metadata: {}
             data:
-              device_id: "{{ device_id }}"
+              entity_id: "{{ target_satellite_device }}"
               type: "{{ type }}"
               time: "{{ time }}"
               name: "{{ name }}"
@@ -853,14 +858,16 @@ action:
         sequence:
           - delay: "00:00:01"
           - action: view_assist.get_timers
-            data:
-              device_id: "{{ trigger.event.data.service_data.device_id }}"
-            response_variable: timer_data
-          - action: view_assist.get_timers
             data: {}
             response_variable: all_timer_data
           - variables:
-              target_satellite_device: "{{ timer_data['result'][0]['entity_id'] }}"
+              # set_timer accepts either an entity or a device, and callers use
+              # both. Resolve whichever was supplied instead of assuming a
+              # device id, which is undefined when an entity was passed.
+              target_satellite_device: >-
+                {% set sd = trigger.event.data.get('service_data', {}) %}
+                {{ sd.get('entity_id')
+                   or (view_assist_entity(sd.get('device_id')) if sd.get('device_id') else '') }}
               # The devices this timer is visible on: its owner, plus every
               # device configured to show timers from all devices.
               icon_devices: >-
