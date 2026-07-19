@@ -482,17 +482,22 @@ action:
           - action: view_assist.get_timers
             data: {}
             response_variable: timer_data
-          - variables:
-              timer_count: "{{ timer_data.get('result', []) | selectattr('timer_class', 'eq', 'timer') | list | count }}"
-          - if:
-              - condition: template
-                value_template: "{{ (timer_count > 0 and not allow_hold_mode) or (timer_count == 0) }}"
-            then:
-              # Release every device the alarm put into hold, not just the
-              # timer's owner.
-              - repeat:
-                  for_each: "{{ alarm_targets }}"
-                  sequence:
+          # Release every device the alarm put into hold, not just the timer's
+          # owner, and decide per device from the timers that device can still
+          # see. A global count would strand a device whose own timers are gone
+          # while some other device still has one.
+          - repeat:
+              for_each: "{{ alarm_targets }}"
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: >-
+                        {% set all_timers = timer_data.get('result', []) %}
+                        {% set visible = all_timers if state_attr(repeat.item.entity, 'show_all_timers')
+                           else all_timers | selectattr('entity_id', 'eq', repeat.item.entity) | list %}
+                        {% set n = visible | selectattr('timer_class', 'eq', 'timer') | list | count %}
+                        {{ (n > 0 and not allow_hold_mode) or (n == 0) }}
+                  then:
                     - action: view_assist.set_state
                       target:
                         entity_id: "{{ repeat.item.entity }}"
@@ -506,7 +511,6 @@ action:
           - variables:
               new_time: "{{ snooze_time }} minutes"
               timer_id: "{{ trigger.event.data.timer_id }}"
-              device_entity: "{{ trigger.event.data.entity_id }}"
           - repeat:
               for_each: "{{ alarm_targets }}"
               sequence:
@@ -598,17 +602,20 @@ action:
               - action: view_assist.get_timers
                 data: {}
                 response_variable: timer_data
-              - variables:
-                  timer_count: "{{ timer_data.get('result', []) | selectattr('timer_class', 'eq', 'timer') | list | count }}"
-              - if:
-                  - condition: template
-                    value_template: "{{ (timer_count > 0 and not allow_hold_mode) or (timer_count == 0) }}"
-                then:
-                  # Release every device the alarm put into hold, not just the
-                  # device that was spoken to.
-                  - repeat:
-                      for_each: "{{ alarm_targets }}"
-                      sequence:
+              # Release every device the alarm put into hold, not just the one
+              # spoken to, deciding per device from what it can still see.
+              - repeat:
+                  for_each: "{{ alarm_targets }}"
+                  sequence:
+                    - if:
+                        - condition: template
+                          value_template: >-
+                            {% set all_timers = timer_data.get('result', []) %}
+                            {% set visible = all_timers if state_attr(repeat.item.entity, 'show_all_timers')
+                               else all_timers | selectattr('entity_id', 'eq', repeat.item.entity) | list %}
+                            {% set n = visible | selectattr('timer_class', 'eq', 'timer') | list | count %}
+                            {{ (n > 0 and not allow_hold_mode) or (n == 0) }}
+                      then:
                         - action: view_assist.set_state
                           target:
                             entity_id: "{{ repeat.item.entity }}"
@@ -758,41 +765,38 @@ action:
             data: {}
             response_variable: timer_data
           - variables:
-              timer_count: "{{ timer_data.get('result', []) | selectattr('timer_class', 'eq', 'timer') | list | count }}"
-              reminder_count: "{{ timer_data.get('result', []) | selectattr('timer_class', 'eq', 'reminder') | list | count }}"
-              alarm_count: "{{ timer_data.get('result', []) | selectattr('timer_class', 'eq', 'alarm') | list | count }}"
               # all_display_entities: "{{ view_assist_entities(filter={'type':'view_audio'}) }}"
               all_display_entities: >
                 {% set view_audio_entities = view_assist_entities(filter={'type':'view_audio'}) %}
                 {% set vaca_entities = view_assist_entities(filter={'type':'vaca'}) %}
                 {{ view_audio_entities + vaca_entities }}
-              contains_timer_icon: >
-                {% set ns = namespace(found=[]) %}
-                {% for e in all_display_entities %}
-                  {% set icons = state_attr(e, 'status_icons') %}
-                  {% if icons is iterable and 'view:alarm|timer-outline' in icons %}
-                    {% set ns.found = ns.found + [e] %}
-                  {% endif %}
+              # Which icons each device should no longer be showing. Decided per
+              # device from what that device can see — all timers if it shows
+              # timers from all devices, otherwise only its own. A global "no
+              # timers anywhere" test would strand an icon on a device whose own
+              # timer was cancelled while another device still had one.
+              #
+              # Read timer_data inside this template: the records hold datetimes
+              # and enums, so a variable holding the raw list comes back as a
+              # string and every filter below would silently match nothing.
+              icon_removal_plan: >-
+                {% set all_timers = timer_data.get('result', []) %}
+                {% set ns = namespace(out=[]) %}
+                {% for d in all_display_entities %}
+                  {% set visible = all_timers if state_attr(d, 'show_all_timers')
+                     else all_timers | selectattr('entity_id', 'eq', d) | list %}
+                  {% set icons = state_attr(d, 'status_icons') or [] %}
+                  {% set ns.out = ns.out + [{
+                    'entity': d,
+                    'timer': 'view:alarm|timer-outline' in icons
+                      and (visible | selectattr('timer_class', 'eq', 'timer') | list | count) == 0,
+                    'reminder': 'view:alarm|reminder' in icons
+                      and (visible | selectattr('timer_class', 'eq', 'reminder') | list | count) == 0,
+                    'alarm': 'view:alarm|alarm' in icons
+                      and (visible | selectattr('timer_class', 'eq', 'alarm') | list | count) == 0
+                  }] %}
                 {% endfor %}
-                {{ ns.found }}
-              contains_reminder_icon: >
-                {% set ns = namespace(found=[]) %}
-                {% for e in all_display_entities %}
-                  {% set icons = state_attr(e, 'status_icons') %}
-                  {% if icons is iterable and 'view:alarm|reminder' in icons %}
-                    {% set ns.found = ns.found + [e] %}
-                  {% endif %}
-                {% endfor %}
-                {{ ns.found }}
-              contains_alarm_icon: >
-                {% set ns = namespace(found=[]) %}
-                {% for e in all_display_entities %}
-                  {% set icons = state_attr(e, 'status_icons') %}
-                  {% if icons is iterable and 'view:alarm|alarm' in icons %}
-                    {% set ns.found = ns.found + [e] %}
-                  {% endif %}
-                {% endfor %}
-                {{ ns.found }}
+                {{ ns.out }}
               hold_mode_on_alarm_view: >
                 {% set ns = namespace(found=[]) %}
                 {% for e in all_display_entities %}
@@ -803,38 +807,32 @@ action:
                   {% endif %}
                 {% endfor %}
                 {{ ns.found }}
-          - if:
-              - condition: template
-                value_template: "{{ timer_count == 0 and contains_timer_icon | count > 0 }}"
-            then:
-              - repeat:
-                  for_each: "{{ contains_timer_icon }}"
-                  sequence:
+          - repeat:
+              for_each: "{{ icon_removal_plan }}"
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: "{{ repeat.item.timer }}"
+                  then:
                     - action: view_assist.remove_status_item
                       data:
-                        entity_id: "{{ repeat.item }}"
+                        entity_id: "{{ repeat.item.entity }}"
                         status_item: "view:alarm|timer-outline"
-          - if:
-              - condition: template
-                value_template: "{{ reminder_count == 0 and contains_reminder_icon | count > 0 }}"
-            then:
-              - repeat:
-                  for_each: "{{ contains_reminder_icon }}"
-                  sequence:
+                - if:
+                    - condition: template
+                      value_template: "{{ repeat.item.reminder }}"
+                  then:
                     - action: view_assist.remove_status_item
                       data:
-                        entity_id: "{{ repeat.item }}"
+                        entity_id: "{{ repeat.item.entity }}"
                         status_item: "view:alarm|reminder"
-          - if:
-              - condition: template
-                value_template: "{{ alarm_count == 0 and contains_alarm_icon | count > 0 }}"
-            then:
-              - repeat:
-                  for_each: "{{ contains_alarm_icon }}"
-                  sequence:
+                - if:
+                    - condition: template
+                      value_template: "{{ repeat.item.alarm }}"
+                  then:
                     - action: view_assist.remove_status_item
                       data:
-                        entity_id: "{{ repeat.item }}"
+                        entity_id: "{{ repeat.item.entity }}"
                         status_item: "view:alarm|alarm"
           - if:
               - condition: template
