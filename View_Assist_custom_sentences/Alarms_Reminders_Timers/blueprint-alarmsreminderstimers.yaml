@@ -835,33 +835,69 @@ action:
             data:
               device_id: "{{ trigger.event.data.service_data.device_id }}"
             response_variable: timer_data
+          - action: view_assist.get_timers
+            data: {}
+            response_variable: all_timer_data
           - variables:
               target_satellite_device: "{{ timer_data['result'][0]['entity_id'] }}"
-              timer_count: "{{ timer_data.result | selectattr('timer_class', 'eq', 'timer') | list | count }}"
-              reminder_count: "{{ timer_data.result | selectattr('timer_class', 'eq', 'reminder') | list | count }}"
-              alarm_count: "{{ timer_data.result | selectattr('timer_class', 'eq', 'alarm') | list | count }}"
-          - if:
-              - condition: template
-                value_template: "{{ 'timers' in enabled_icons and timer_count == 1 }}"
-            then:
-              - action: view_assist.add_status_item
-                data:
-                  entity_id: "{{ target_satellite_device }}"
-                  status_item: "view:alarm|timer-outline"
-          - if:
-              - condition: template
-                value_template: "{{ 'reminders' in enabled_icons and reminder_count == 1 }}"
-            then:
-              - action: view_assist.add_status_item
-                data:
-                  entity_id: "{{ target_satellite_device }}"
-                  status_item: "view:alarm|reminder"
-          - if:
-              - condition: template
-                value_template: "{{ 'alarms' in enabled_icons and alarm_count == 1 }}"
-            then:
-              - action: view_assist.add_status_item
-                data:
-                  entity_id: "{{ target_satellite_device }}"
-                  status_item: "view:alarm|alarm"
+              # The devices this timer is visible on: its owner, plus every
+              # device configured to show timers from all devices.
+              icon_devices: >-
+                {% set ns = namespace(out=[target_satellite_device]) %}
+                {% for e in integration_entities('view_assist') | select('match', '^sensor\.') %}
+                  {% if state_attr(e, 'show_all_timers') and e not in ns.out %}
+                    {% set ns.out = ns.out + [e] %}
+                  {% endif %}
+                {% endfor %}
+                {{ ns.out }}
+              # A device showing all timers counts every timer; the rest count
+              # only their own. Resolved per device so the checks below stay flat.
+              #
+              # The timer records hold datetimes and enums, which are not Python
+              # literals, so a variable holding the raw list comes back as a
+              # string and every filter below would silently match nothing. Read
+              # the response inside this template so it stays a real list.
+              icon_plan: >-
+                {% set all_timers = all_timer_data.get('result', []) %}
+                {% set ns = namespace(out=[]) %}
+                {% for d in icon_devices %}
+                  {% set visible = all_timers if state_attr(d, 'show_all_timers')
+                     else all_timers | selectattr('entity_id', 'eq', d) | list %}
+                  {% set ns.out = ns.out + [{
+                    'entity': d,
+                    'timer': (visible | selectattr('timer_class', 'eq', 'timer') | list | count) > 0,
+                    'reminder': (visible | selectattr('timer_class', 'eq', 'reminder') | list | count) > 0,
+                    'alarm': (visible | selectattr('timer_class', 'eq', 'alarm') | list | count) > 0
+                  }] %}
+                {% endfor %}
+                {{ ns.out }}
+          # add_status_item ignores an icon already present, so assert the whole
+          # desired state rather than edge-triggering on a count reaching one.
+          - repeat:
+              for_each: "{{ icon_plan }}"
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: "{{ 'timers' in enabled_icons and repeat.item.timer }}"
+                  then:
+                    - action: view_assist.add_status_item
+                      data:
+                        entity_id: "{{ repeat.item.entity }}"
+                        status_item: "view:alarm|timer-outline"
+                - if:
+                    - condition: template
+                      value_template: "{{ 'reminders' in enabled_icons and repeat.item.reminder }}"
+                  then:
+                    - action: view_assist.add_status_item
+                      data:
+                        entity_id: "{{ repeat.item.entity }}"
+                        status_item: "view:alarm|reminder"
+                - if:
+                    - condition: template
+                      value_template: "{{ 'alarms' in enabled_icons and repeat.item.alarm }}"
+                  then:
+                    - action: view_assist.add_status_item
+                      data:
+                        entity_id: "{{ repeat.item.entity }}"
+                        status_item: "view:alarm|alarm"
 mode: parallel
