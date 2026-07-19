@@ -34,6 +34,18 @@ blueprint:
       default: false
       selector:
         boolean: {}
+    fallback_device:
+      name: Device for requests from non-View-Assist sources
+      description:
+        Which View Assist device owns a timer requested from something that is
+        not a View Assist device — Assist in the Home Assistant app, for
+        example. Timers must belong to a device so they have somewhere to ring.
+        Leave empty to reject such requests.
+      default: ""
+      selector:
+        entity:
+          integration: view_assist
+          domain: sensor
     alarm_on_all_devices:
       name: Sound alarm on all devices showing the timer
       description:
@@ -215,14 +227,20 @@ trigger:
 condition: []
 action:
   - variables:
+      fallback_device: !input fallback_device
       # Event triggers carry the device differently depending on the event:
       # va_timer_* and viewassist events put entity_id directly on the data,
       # while call_service events nest the caller's target under service_data.
       # Use .get() throughout so a shape without the key yields nothing rather
       # than an undefined-attribute warning on every trigger.
+      #
+      # Conversations can come from things that are not View Assist devices, so
+      # resolve with the mimic fallback disabled and fall back to the device
+      # configured above. Relying on the mimic device instead would work, but it
+      # is a developer setting and it silently absorbs genuinely bad ids.
       target_satellite_device: >-
         {% if trigger.platform == 'conversation' %}
-          {{ view_assist_entity(trigger.device_id) }}
+          {{ view_assist_entity(trigger.device_id, false) or fallback_device or '' }}
         {% else %}
           {% set data = trigger.event.data %}
           {% set sd = data.get('service_data', {}) %}
