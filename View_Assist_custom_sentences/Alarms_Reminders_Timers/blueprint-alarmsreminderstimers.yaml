@@ -330,6 +330,7 @@ action:
             multiple_active_timers: "There are {count} active timers:"
             final_timer: "and {timer_expiry_speak}"
             no_display: "This device does not have a display to show timers"
+            no_va_device: "This device is not set up to use View Assist timers"
             timer_cancel: "Your {timer_info} has been canceled"
             named_timer_not_found: "That timer could not be found"
             timer_not_found: "The {timer_info} could not be found"
@@ -389,6 +390,20 @@ action:
             named_timer_not_found: "Taj tajmer nije pronađen"
             timer_not_found: "{timer_info} nije pronađen"
             time_left: "Imate {time_left} na vašem {timer_info}"
+
+  # A conversation can come from something that is not a View Assist device.
+  # With no fallback device configured there is nothing to attach a timer to,
+  # so say so and stop. Continuing fails entity validation deeper in, which
+  # leaves the automation dead while Assist still answers "Done".
+  - if:
+      - condition: template
+        value_template: >-
+          {{ trigger.platform == 'conversation' and not target_satellite_device }}
+    then:
+      - set_conversation_response: >-
+          {{ translations[spokenlanguage]['responses'].get('no_va_device',
+             translations['en']['responses']['no_va_device']) }}
+      - stop: "Non-View-Assist source and no fallback device configured"
   - choose:
       - conditions:
           - condition: trigger
