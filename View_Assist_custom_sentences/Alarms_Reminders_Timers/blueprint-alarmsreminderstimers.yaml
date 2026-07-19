@@ -516,6 +516,7 @@ action:
           - action: view_assist.cancel_timer
             data:
               timer_id: "{{ timer_id }}"
+              language: "{{ spokenlanguage }}"
           - delay: "00:00:01"
           - action: view_assist.get_timers
             data: {}
@@ -568,6 +569,7 @@ action:
             data:
               timer_id: "{{ timer_id }}"
               time: "{{ new_time }}"
+              language: "{{ spokenlanguage }}"
             response_variable: snooze_response
           - if:
               - condition: template
@@ -634,6 +636,7 @@ action:
               - action: view_assist.cancel_timer
                 data:
                   timer_id: "{{ timer_id }}"
+                  language: "{{ spokenlanguage }}"
               - set_conversation_response: >
                   {{ translations[spokenlanguage]['responses']['timer_cancel'].replace('{timer_info}', (timer_name if timer_name else timer_sentence) ~ ' ' ~ timer_class) }}
               - delay: "00:00:01"
