@@ -1,6 +1,6 @@
 type: custom:button-card
 variables:
-  alertsstackversion: 3.2.0
+  alertsstackversion: 3.2.1
 template:
 - variable_template
 - body_template
@@ -45,28 +45,28 @@ custom_fields:
         \ '\"icon name\" \"icon msg\" \"dismiss dismiss\"'},\n        {'grid-template-columns': 'min-content 1fr'},\n\
         \        {'grid-template-rows': 'min-content min-content min-content'},\n        {'column-gap': '5vh'},\
         \ {'row-gap': '1vh'}\n      ],\n      card: [{background: 'none'}, {border: 'none'}, {padding: '4vh'}, {'margin-top':\
-        \ '6vh'}],\n      custom_fields: {\n        icon: [{'grid-area': 'icon'}, {'align-self': 'center'}, {'justify-self':\
-        \ 'end'},\n               {'border-right': '2px solid rgba(255,255,255,0.6)'}, {'padding-right': '5vh'},\n\
-        \               {color: COLOR[e.attributes.priority] || '#ffb300'}],\n        name: [{'grid-area': 'name'},\
-        \ {'justify-self': 'start'}, {'align-self': 'end'},\n               {'font-size': '9vh'}, {'font-weight':\
-        \ 500}, {'text-align': 'left'}],\n        msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self':\
-        \ 'start'},\n              {'font-size': '5vh'}, {'font-weight': 300}, {opacity: 0.9}, {'text-align': 'left'},\n\
-        \              {'text-wrap': 'balance'}],\n        dismiss: [{'grid-area': 'dismiss'}, {'justify-self':\
-        \ 'center'}, {'margin-top': '7vh'},\n                  {width: '45%'}]\n      }\n    },\n    custom_fields:\
-        \ {\n      icon: `<ha-icon icon=\"${e.attributes.icon || 'mdi:alert-circle'}\" style=\"--mdc-icon-size:\
-        \ 22vh; margin: 0;\"></ha-icon>`,\n      name: e.attributes.friendly_name || e.entity_id,\n      msg: e.attributes.last_fired_message\
-        \ || '',\n      dismiss: {card: {\n        type: 'custom:button-card',\n        name: 'DISMISS',\n     \
-        \   tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},\n   \
-        \     styles: {\n          card: [{'background-color': 'rgba(0,0,0,0.45)'}, {border: 'none'},\n        \
-        \         {'border-radius': '1vw'}, {'min-height': '14vh'}],\n          name: [{'font-size': '4.5vh'}, {'font-weight':\
-        \ 500}, {'letter-spacing': '0.1em'}]\n        }\n      }}\n    }\n  });\n\n  const all = Object.values(hass.states)\n\
-        \    .filter(e => e.entity_id.startsWith('alert2.') && !EXCLUDE.includes(e.entity_id) && !e.attributes.is_acked);\n\
-        \  const active = all.filter(e => e.state === 'on')\n    .sort((a, b) => {\n      const r = (RANK[a.attributes.priority]\
-        \ ?? 1) - (RANK[b.attributes.priority] ?? 1);\n      if (r) return r;\n      return (b.attributes.last_on_time\
-        \ || '').localeCompare(a.attributes.last_on_time || '');\n    });\n\n  if (active.length === 1) return [hero(active[0])];\n\
-        \  if (active.length) return active.map(e => row(e, true));\n\n  const cleared = all.filter(e => e.state\
-        \ === 'off' && e.attributes.last_fired_time)\n    .sort((a, b) => (b.attributes.last_fired_time || '').localeCompare(a.attributes.last_fired_time\
-        \ || ''));\n\n  if (cleared.length) {\n    return [...cleared.map(e => row(e, false)), {\n      type: 'custom:button-card',\n\
+        \ '4vh'}],\n      custom_fields: {\n        icon: [{'grid-area': 'icon'}, {'align-self': 'center'}, {'justify-self':\
+        \ 'end'},\n               {'border-right': '2px solid rgba(255,255,255,0.6)'}, {'padding-right': '6vh'},\n\
+        \               {color: 'white'}],\n        name: [{'grid-area': 'name'}, {'justify-self': 'start'}, {'align-self':\
+        \ 'end'},\n               {'font-size': '12vh'}, {'font-weight': 500}, {'text-align': 'left'}],\n      \
+        \  msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self': 'start'},\n              {'font-size':\
+        \ '6.5vh'}, {'font-weight': 300}, {opacity: 0.9}, {'text-align': 'left'},\n              {'text-wrap': 'balance'}],\n\
+        \        dismiss: [{'grid-area': 'dismiss'}, {'justify-self': 'center'}, {'margin-top': '8vh'},\n      \
+        \            {width: '55%'}]\n      }\n    },\n    custom_fields: {\n      icon: `<ha-icon icon=\"${e.attributes.icon\
+        \ || 'mdi:alert-circle'}\" style=\"--mdc-icon-size: 30vh; margin: 0;\"></ha-icon>`,\n      name: e.attributes.friendly_name\
+        \ || e.entity_id,\n      msg: e.attributes.last_fired_message || '',\n      dismiss: {card: {\n        type:\
+        \ 'custom:button-card',\n        name: 'DISMISS',\n        tap_action: {action: 'call-service', service:\
+        \ 'alert2.ack', target: {entity_id: e.entity_id}},\n        styles: {\n          card: [{'background-color':\
+        \ 'rgba(0,0,0,0.45)'}, {border: 'none'},\n                 {'border-radius': '1vw'}, {'min-height': '16vh'}],\n\
+        \          name: [{'font-size': '5.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]\n        }\n\
+        \      }}\n    }\n  });\n\n  const all = Object.values(hass.states)\n    .filter(e => e.entity_id.startsWith('alert2.')\
+        \ && !EXCLUDE.includes(e.entity_id) && !e.attributes.is_acked);\n  const active = all.filter(e => e.state\
+        \ === 'on')\n    .sort((a, b) => {\n      const r = (RANK[a.attributes.priority] ?? 1) - (RANK[b.attributes.priority]\
+        \ ?? 1);\n      if (r) return r;\n      return (b.attributes.last_on_time || '').localeCompare(a.attributes.last_on_time\
+        \ || '');\n    });\n\n  if (active.length === 1) return [hero(active[0])];\n  if (active.length) return\
+        \ active.map(e => row(e, true));\n\n  const cleared = all.filter(e => e.state === 'off' && e.attributes.last_fired_time)\n\
+        \    .sort((a, b) => (b.attributes.last_fired_time || '').localeCompare(a.attributes.last_fired_time ||\
+        \ ''));\n\n  if (cleared.length) {\n    return [...cleared.map(e => row(e, false)), {\n      type: 'custom:button-card',\n\
         \      name: 'ACK ALL',\n      tap_action: {action: 'call-service', service: 'alert2.ack_all'},\n      styles:\
         \ {\n        card: [{'background-color': 'rgba(0,0,0,0.45)'}, {border: 'none'},\n               {'border-radius':\
         \ '1vw'}, {'min-height': '10vh'}, {'margin-top': '1vh'}],\n        name: [{'font-size': '3.5vh'}, {'font-weight':\
