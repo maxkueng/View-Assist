@@ -1,6 +1,6 @@
 type: custom:button-card
 variables:
-  alertsstackversion: 3.1.0
+  alertsstackversion: 3.1.1
 template:
 - variable_template
 - body_template
@@ -23,7 +23,7 @@ custom_fields:
         \      entity: e.entity_id,\n      show_icon: false, show_name: false, show_state: false,\n      styles:\
         \ {\n        grid: [\n          {'grid-template-areas': '\"icon name dismiss\" \"icon msg dismiss\"'},\n\
         \          {'grid-template-columns': '12vh 1fr 24vh'},\n          {'grid-template-rows': 'min-content min-content'},\n\
-        \          {'column-gap': '2vh'}\n        ],\n        card: [\n          {'background-color': 'rgba(255,255,255,0.12)'},\n\
+        \          {'column-gap': '2vh'}\n        ],\n        card: [\n          {'background-color': 'rgba(0,0,0,0.35)'},\n\
         \          {border: 'none'}, {'border-radius': '1vw'},\n          {padding: '2vh'}, {'margin-bottom': '1.5vh'},\n\
         \          {opacity: active ? 1 : 0.55}\n        ],\n        custom_fields: {\n          icon: [{'grid-area':\
         \ 'icon'}, {'align-self': 'center'}, {'justify-self': 'center'},\n                 {color: active ? (COLOR[e.attributes.priority]\
@@ -37,8 +37,8 @@ custom_fields:
         \ || e.entity_id,\n        msg: active ? msg : `Cleared · ${ts}${msg ? ' — ' + msg : ''}`,\n        dismiss:\
         \ {card: {\n          type: 'custom:button-card',\n          name: active ? 'DISMISS' : 'ACK',\n       \
         \   tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},\n   \
-        \       styles: {\n            card: [{'background-color': 'rgba(255,255,255,0.25)'}, {border: 'none'},\n\
-        \                   {'border-radius': '1vw'}, {height: '100%'}, {'min-height': '12vh'}],\n            name:\
+        \       styles: {\n            card: [{'background-color': 'rgba(0,0,0,0.45)'}, {border: 'none'},\n    \
+        \               {'border-radius': '1vw'}, {height: '100%'}, {'min-height': '12vh'}],\n            name:\
         \ [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]\n          }\n        }}\n\
         \      }\n    };\n  };\n\n  const all = Object.values(hass.states)\n    .filter(e => e.entity_id.startsWith('alert2.')\
         \ && !EXCLUDE.includes(e.entity_id) && !e.attributes.is_acked);\n  const active = all.filter(e => e.state\
@@ -48,7 +48,7 @@ custom_fields:
         \ => e.state === 'off' && e.attributes.last_fired_time)\n    .sort((a, b) => (b.attributes.last_fired_time\
         \ || '').localeCompare(a.attributes.last_fired_time || ''));\n\n  if (cleared.length) {\n    return [...cleared.map(e\
         \ => row(e, false)), {\n      type: 'custom:button-card',\n      name: 'ACK ALL',\n      tap_action: {action:\
-        \ 'call-service', service: 'alert2.ack_all'},\n      styles: {\n        card: [{'background-color': 'rgba(255,255,255,0.2)'},\
+        \ 'call-service', service: 'alert2.ack_all'},\n      styles: {\n        card: [{'background-color': 'rgba(0,0,0,0.45)'},\
         \ {border: 'none'},\n               {'border-radius': '1vw'}, {'min-height': '10vh'}, {'margin-top': '1vh'}],\n\
         \        name: [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]\n      }\n  \
         \  }];\n  }\n\n  return [{\n    type: 'custom:button-card',\n    show_icon: false, show_name: false,\n \
