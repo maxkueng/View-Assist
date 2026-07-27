@@ -1,6 +1,6 @@
 type: custom:button-card
 variables:
-  alertsstackversion: 3.0.3
+  alertsstackversion: 3.1.0
 template:
 - variable_template
 - body_template
@@ -59,6 +59,14 @@ custom_fields:
         \ style=\"display:flex; align-items:center; justify-content:center; width:100%;\"><ha-icon icon=\"mdi:check-circle-outline\"\
         \ style=\"--mdc-icon-size: 7vh; margin: 0;\"></ha-icon>&nbsp; No active alerts</div>'}\n  }];\n]]]"
 styles:
+  card:
+  - background-color: "[[[\n  const EXCLUDE = ['alert2.alert2_error', 'alert2.alert2_warning', 'alert2.alert2_global_exception'];\n\
+      \  const RANK = {high: 3, medium: 2, low: 1};\n  const BG = {3: '#8f1f1f', 2: '#9a5b00', 1: '#0b5d8f'};\n\
+      \  let best = 0;\n  for (const e of Object.values(hass.states)) {\n    if (!e.entity_id.startsWith('alert2.')\
+      \ || EXCLUDE.includes(e.entity_id)) continue;\n    if (e.state !== 'on' || e.attributes.is_acked) continue;\n\
+      \    best = Math.max(best, RANK[e.attributes.priority] ?? 2);\n  }\n  return best ? BG[best] : '#1c1c1c';\n\
+      ]]]"
+  - transition: background-color 0.6s ease
   custom_fields:
     message:
     - grid-area: message
