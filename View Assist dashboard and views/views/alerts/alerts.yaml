@@ -1,6 +1,6 @@
 type: custom:button-card
 variables:
-  alertsstackversion: 3.0.0
+  alertsstackversion: 3.0.1
 template:
 - variable_template
 - body_template
@@ -52,10 +52,11 @@ custom_fields:
         \ {border: 'none'},\n               {'border-radius': '1vw'}, {'min-height': '10vh'}, {'margin-top': '1vh'}],\n\
         \        name: [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]\n      }\n  \
         \  }];\n  }\n\n  return [{\n    type: 'custom:button-card',\n    show_icon: false, show_name: false,\n \
-        \   styles: {\n      card: [{background: 'none'}, {border: 'none'}, {'padding-top': '10vh'}],\n      custom_fields:\
-        \ {empty: [{'font-size': '5vh'}, {'font-weight': 300}, {opacity: 0.7}]}\n    },\n    custom_fields: {empty:\
-        \ '<ha-icon icon=\"mdi:check-circle-outline\" style=\"--mdc-icon-size: 7vh;\"></ha-icon>&nbsp; No active\
-        \ alerts'}\n  }];\n]]]"
+        \   styles: {\n      grid: [{'justify-items': 'center'}],\n      card: [{background: 'none'}, {border: 'none'},\
+        \ {'padding-top': '10vh'}],\n      custom_fields: {empty: [{'font-size': '5vh'}, {'font-weight': 300}, {opacity:\
+        \ 0.7},\n                              {'justify-self': 'center'}, {'text-align': 'center'}, {width: '100%'}]}\n\
+        \    },\n    custom_fields: {empty: '<ha-icon icon=\"mdi:check-circle-outline\" style=\"--mdc-icon-size:\
+        \ 7vh;\"></ha-icon>&nbsp; No active alerts'}\n  }];\n]]]"
 styles:
   custom_fields:
     message:
