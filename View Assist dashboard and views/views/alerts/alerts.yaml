@@ -1,0 +1,429 @@
+type: custom:button-card
+variables:
+  alertsstackversion: 1.0.0
+template:
+- variable_template
+- body_template
+triggers_update:
+- alert2.fridge_door_open
+- alert2.freezer_door_open
+- alert2.air_living_room_co2
+- alert2.air_kitchen_co2
+- alert2.dishwasher_clean
+- sensor.va_active_alerts
+custom_fields:
+  title: Alerts
+  message:
+    card:
+      type: vertical-stack
+      cards:
+      - type: custom:button-card
+        entity: alert2.fridge_door_open
+        show_icon: false
+        show_name: false
+        show_state: false
+        styles:
+          grid:
+          - grid-template-areas: '"icon name dismiss"
+
+              "icon msg dismiss"
+
+              '
+          - grid-template-columns: 12vh 1fr 24vh
+          - grid-template-rows: min-content min-content
+          - column-gap: 2vh
+          card:
+          - display: '[[[ const e = hass.states[''alert2.fridge_door_open'']; return (e && e.state ===
+              ''on'' && !e.attributes.is_acked) ? ''grid'' : ''none''; ]]]'
+          - background-color: rgba(255,255,255,0.12)
+          - border: none
+          - border-radius: 1vw
+          - padding: 2vh
+          custom_fields:
+            icon:
+            - grid-area: icon
+            - align-self: center
+            - justify-self: center
+            - color: '[[[ const p = hass.states[''alert2.fridge_door_open'']?.attributes?.priority; return
+                {"high": "#ff5252", "medium": "#ffb300", "low": "#66bb6a"}[p] || ''#ffb300''; ]]]'
+            name:
+            - grid-area: name
+            - justify-self: start
+            - align-self: end
+            - font-size: 4.5vh
+            - font-weight: 500
+            - text-align: left
+            msg:
+            - grid-area: msg
+            - justify-self: start
+            - align-self: start
+            - font-size: 3vh
+            - font-weight: 300
+            - opacity: 0.85
+            - text-align: left
+            dismiss:
+            - grid-area: dismiss
+            - align-self: center
+            - justify-self: stretch
+            - height: 100%
+        custom_fields:
+          icon: '[[[ return `<ha-icon icon="mdi:fridge-alert" style="--mdc-icon-size: 8vh;"></ha-icon>`;
+            ]]]'
+          name: '[[[ return hass.states[''alert2.fridge_door_open'']?.attributes?.friendly_name || ''alert2.fridge_door_open'';
+            ]]]'
+          msg: '[[[ return hass.states[''alert2.fridge_door_open'']?.attributes?.last_fired_message ||
+            ''''; ]]]'
+          dismiss:
+            card:
+              type: custom:button-card
+              name: DISMISS
+              tap_action:
+                action: call-service
+                service: alert2.ack
+                target:
+                  entity_id: alert2.fridge_door_open
+              styles:
+                card:
+                - background-color: rgba(255,255,255,0.25)
+                - border: none
+                - border-radius: 1vw
+                - height: 100%
+                - min-height: 12vh
+                name:
+                - font-size: 3.5vh
+                - font-weight: 500
+                - letter-spacing: 0.1em
+      - type: custom:button-card
+        entity: alert2.freezer_door_open
+        show_icon: false
+        show_name: false
+        show_state: false
+        styles:
+          grid:
+          - grid-template-areas: '"icon name dismiss"
+
+              "icon msg dismiss"
+
+              '
+          - grid-template-columns: 12vh 1fr 24vh
+          - grid-template-rows: min-content min-content
+          - column-gap: 2vh
+          card:
+          - display: '[[[ const e = hass.states[''alert2.freezer_door_open'']; return (e && e.state ===
+              ''on'' && !e.attributes.is_acked) ? ''grid'' : ''none''; ]]]'
+          - background-color: rgba(255,255,255,0.12)
+          - border: none
+          - border-radius: 1vw
+          - padding: 2vh
+          custom_fields:
+            icon:
+            - grid-area: icon
+            - align-self: center
+            - justify-self: center
+            - color: '[[[ const p = hass.states[''alert2.freezer_door_open'']?.attributes?.priority; return
+                {"high": "#ff5252", "medium": "#ffb300", "low": "#66bb6a"}[p] || ''#ffb300''; ]]]'
+            name:
+            - grid-area: name
+            - justify-self: start
+            - align-self: end
+            - font-size: 4.5vh
+            - font-weight: 500
+            - text-align: left
+            msg:
+            - grid-area: msg
+            - justify-self: start
+            - align-self: start
+            - font-size: 3vh
+            - font-weight: 300
+            - opacity: 0.85
+            - text-align: left
+            dismiss:
+            - grid-area: dismiss
+            - align-self: center
+            - justify-self: stretch
+            - height: 100%
+        custom_fields:
+          icon: '[[[ return `<ha-icon icon="mdi:snowflake-alert" style="--mdc-icon-size: 8vh;"></ha-icon>`;
+            ]]]'
+          name: '[[[ return hass.states[''alert2.freezer_door_open'']?.attributes?.friendly_name || ''alert2.freezer_door_open'';
+            ]]]'
+          msg: '[[[ return hass.states[''alert2.freezer_door_open'']?.attributes?.last_fired_message ||
+            ''''; ]]]'
+          dismiss:
+            card:
+              type: custom:button-card
+              name: DISMISS
+              tap_action:
+                action: call-service
+                service: alert2.ack
+                target:
+                  entity_id: alert2.freezer_door_open
+              styles:
+                card:
+                - background-color: rgba(255,255,255,0.25)
+                - border: none
+                - border-radius: 1vw
+                - height: 100%
+                - min-height: 12vh
+                name:
+                - font-size: 3.5vh
+                - font-weight: 500
+                - letter-spacing: 0.1em
+      - type: custom:button-card
+        entity: alert2.air_living_room_co2
+        show_icon: false
+        show_name: false
+        show_state: false
+        styles:
+          grid:
+          - grid-template-areas: '"icon name dismiss"
+
+              "icon msg dismiss"
+
+              '
+          - grid-template-columns: 12vh 1fr 24vh
+          - grid-template-rows: min-content min-content
+          - column-gap: 2vh
+          card:
+          - display: '[[[ const e = hass.states[''alert2.air_living_room_co2'']; return (e && e.state
+              === ''on'' && !e.attributes.is_acked) ? ''grid'' : ''none''; ]]]'
+          - background-color: rgba(255,255,255,0.12)
+          - border: none
+          - border-radius: 1vw
+          - padding: 2vh
+          custom_fields:
+            icon:
+            - grid-area: icon
+            - align-self: center
+            - justify-self: center
+            - color: '[[[ const p = hass.states[''alert2.air_living_room_co2'']?.attributes?.priority;
+                return {"high": "#ff5252", "medium": "#ffb300", "low": "#66bb6a"}[p] || ''#ffb300''; ]]]'
+            name:
+            - grid-area: name
+            - justify-self: start
+            - align-self: end
+            - font-size: 4.5vh
+            - font-weight: 500
+            - text-align: left
+            msg:
+            - grid-area: msg
+            - justify-self: start
+            - align-self: start
+            - font-size: 3vh
+            - font-weight: 300
+            - opacity: 0.85
+            - text-align: left
+            dismiss:
+            - grid-area: dismiss
+            - align-self: center
+            - justify-self: stretch
+            - height: 100%
+        custom_fields:
+          icon: '[[[ return `<ha-icon icon="mdi:molecule-co2" style="--mdc-icon-size: 8vh;"></ha-icon>`;
+            ]]]'
+          name: '[[[ return hass.states[''alert2.air_living_room_co2'']?.attributes?.friendly_name ||
+            ''alert2.air_living_room_co2''; ]]]'
+          msg: '[[[ return hass.states[''alert2.air_living_room_co2'']?.attributes?.last_fired_message
+            || ''''; ]]]'
+          dismiss:
+            card:
+              type: custom:button-card
+              name: DISMISS
+              tap_action:
+                action: call-service
+                service: alert2.ack
+                target:
+                  entity_id: alert2.air_living_room_co2
+              styles:
+                card:
+                - background-color: rgba(255,255,255,0.25)
+                - border: none
+                - border-radius: 1vw
+                - height: 100%
+                - min-height: 12vh
+                name:
+                - font-size: 3.5vh
+                - font-weight: 500
+                - letter-spacing: 0.1em
+      - type: custom:button-card
+        entity: alert2.air_kitchen_co2
+        show_icon: false
+        show_name: false
+        show_state: false
+        styles:
+          grid:
+          - grid-template-areas: '"icon name dismiss"
+
+              "icon msg dismiss"
+
+              '
+          - grid-template-columns: 12vh 1fr 24vh
+          - grid-template-rows: min-content min-content
+          - column-gap: 2vh
+          card:
+          - display: '[[[ const e = hass.states[''alert2.air_kitchen_co2'']; return (e && e.state ===
+              ''on'' && !e.attributes.is_acked) ? ''grid'' : ''none''; ]]]'
+          - background-color: rgba(255,255,255,0.12)
+          - border: none
+          - border-radius: 1vw
+          - padding: 2vh
+          custom_fields:
+            icon:
+            - grid-area: icon
+            - align-self: center
+            - justify-self: center
+            - color: '[[[ const p = hass.states[''alert2.air_kitchen_co2'']?.attributes?.priority; return
+                {"high": "#ff5252", "medium": "#ffb300", "low": "#66bb6a"}[p] || ''#ffb300''; ]]]'
+            name:
+            - grid-area: name
+            - justify-self: start
+            - align-self: end
+            - font-size: 4.5vh
+            - font-weight: 500
+            - text-align: left
+            msg:
+            - grid-area: msg
+            - justify-self: start
+            - align-self: start
+            - font-size: 3vh
+            - font-weight: 300
+            - opacity: 0.85
+            - text-align: left
+            dismiss:
+            - grid-area: dismiss
+            - align-self: center
+            - justify-self: stretch
+            - height: 100%
+        custom_fields:
+          icon: '[[[ return `<ha-icon icon="mdi:molecule-co2" style="--mdc-icon-size: 8vh;"></ha-icon>`;
+            ]]]'
+          name: '[[[ return hass.states[''alert2.air_kitchen_co2'']?.attributes?.friendly_name || ''alert2.air_kitchen_co2'';
+            ]]]'
+          msg: '[[[ return hass.states[''alert2.air_kitchen_co2'']?.attributes?.last_fired_message ||
+            ''''; ]]]'
+          dismiss:
+            card:
+              type: custom:button-card
+              name: DISMISS
+              tap_action:
+                action: call-service
+                service: alert2.ack
+                target:
+                  entity_id: alert2.air_kitchen_co2
+              styles:
+                card:
+                - background-color: rgba(255,255,255,0.25)
+                - border: none
+                - border-radius: 1vw
+                - height: 100%
+                - min-height: 12vh
+                name:
+                - font-size: 3.5vh
+                - font-weight: 500
+                - letter-spacing: 0.1em
+      - type: custom:button-card
+        entity: alert2.dishwasher_clean
+        show_icon: false
+        show_name: false
+        show_state: false
+        styles:
+          grid:
+          - grid-template-areas: '"icon name dismiss"
+
+              "icon msg dismiss"
+
+              '
+          - grid-template-columns: 12vh 1fr 24vh
+          - grid-template-rows: min-content min-content
+          - column-gap: 2vh
+          card:
+          - display: '[[[ const e = hass.states[''alert2.dishwasher_clean'']; return (e && e.state ===
+              ''on'' && !e.attributes.is_acked) ? ''grid'' : ''none''; ]]]'
+          - background-color: rgba(255,255,255,0.12)
+          - border: none
+          - border-radius: 1vw
+          - padding: 2vh
+          custom_fields:
+            icon:
+            - grid-area: icon
+            - align-self: center
+            - justify-self: center
+            - color: '[[[ const p = hass.states[''alert2.dishwasher_clean'']?.attributes?.priority; return
+                {"high": "#ff5252", "medium": "#ffb300", "low": "#66bb6a"}[p] || ''#ffb300''; ]]]'
+            name:
+            - grid-area: name
+            - justify-self: start
+            - align-self: end
+            - font-size: 4.5vh
+            - font-weight: 500
+            - text-align: left
+            msg:
+            - grid-area: msg
+            - justify-self: start
+            - align-self: start
+            - font-size: 3vh
+            - font-weight: 300
+            - opacity: 0.85
+            - text-align: left
+            dismiss:
+            - grid-area: dismiss
+            - align-self: center
+            - justify-self: stretch
+            - height: 100%
+        custom_fields:
+          icon: '[[[ return `<ha-icon icon="mdi:dishwasher" style="--mdc-icon-size: 8vh;"></ha-icon>`;
+            ]]]'
+          name: '[[[ return hass.states[''alert2.dishwasher_clean'']?.attributes?.friendly_name || ''alert2.dishwasher_clean'';
+            ]]]'
+          msg: '[[[ return hass.states[''alert2.dishwasher_clean'']?.attributes?.last_fired_message ||
+            ''''; ]]]'
+          dismiss:
+            card:
+              type: custom:button-card
+              name: DISMISS
+              tap_action:
+                action: call-service
+                service: alert2.ack
+                target:
+                  entity_id: alert2.dishwasher_clean
+              styles:
+                card:
+                - background-color: rgba(255,255,255,0.25)
+                - border: none
+                - border-radius: 1vw
+                - height: 100%
+                - min-height: 12vh
+                name:
+                - font-size: 3.5vh
+                - font-weight: 500
+                - letter-spacing: 0.1em
+      - type: custom:button-card
+        entity: sensor.va_active_alerts
+        show_icon: false
+        show_name: false
+        show_state: false
+        styles:
+          card:
+          - display: '[[[ return hass.states[''sensor.va_active_alerts'']?.state === ''0'' ? ''grid''
+              : ''none''; ]]]'
+          - background: none
+          - border: none
+          - padding-top: 10vh
+          custom_fields:
+            empty:
+            - font-size: 5vh
+            - font-weight: 300
+            - opacity: 0.7
+        custom_fields:
+          empty: '[[[ return `<ha-icon icon="mdi:check-circle-outline" style="--mdc-icon-size: 7vh;"></ha-icon>&nbsp;
+            No active alerts`; ]]]'
+styles:
+  custom_fields:
+    message:
+    - grid-area: message
+    - justify-self: center
+    - align-self: start
+    - width: 94%
+    - margin-top: 9vh
+    - max-height: 78vh
+    - overflow-y: auto
