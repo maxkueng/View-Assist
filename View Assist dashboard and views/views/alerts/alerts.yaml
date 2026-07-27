@@ -1,6 +1,6 @@
 type: custom:button-card
 variables:
-  alertsstackversion: 3.0.2
+  alertsstackversion: 3.0.3
 template:
 - variable_template
 - body_template
@@ -57,7 +57,7 @@ custom_fields:
         \ [{'grid-area': 'empty'}, {'justify-self': 'stretch'}, {width: '100%'},\n                             \
         \ {'font-size': '5vh'}, {'font-weight': 300}, {opacity: 0.7}]}\n    },\n    custom_fields: {empty: '<div\
         \ style=\"display:flex; align-items:center; justify-content:center; width:100%;\"><ha-icon icon=\"mdi:check-circle-outline\"\
-        \ style=\"--mdc-icon-size: 7vh;\"></ha-icon>&nbsp; No active alerts</div>'}\n  }];\n]]]"
+        \ style=\"--mdc-icon-size: 7vh; margin: 0;\"></ha-icon>&nbsp; No active alerts</div>'}\n  }];\n]]]"
 styles:
   custom_fields:
     message:
