@@ -1,6 +1,6 @@
 type: custom:button-card
 variables:
-  alertsstackversion: 2.0.0
+  alertsstackversion: 3.0.0
 template:
 - variable_template
 - body_template
@@ -17,34 +17,45 @@ custom_fields:
         grid-template-columns: 1fr
       cards: "[[[\n  const EXCLUDE = ['alert2.alert2_error', 'alert2.alert2_warning', 'alert2.alert2_global_exception'];\n\
         \  const RANK = {high: 0, medium: 1, low: 2};\n  const COLOR = {high: '#ff5252', medium: '#ffb300', low:\
-        \ '#66bb6a'};\n  const alerts = Object.values(hass.states)\n    .filter(e => e.entity_id.startsWith('alert2.')\n\
-        \      && !EXCLUDE.includes(e.entity_id)\n      && e.state === 'on'\n      && !e.attributes.is_acked)\n\
-        \    .sort((a, b) => {\n      const r = (RANK[a.attributes.priority] ?? 1) - (RANK[b.attributes.priority]\
+        \ '#66bb6a'};\n\n  const row = (e, active) => {\n    const when = e.attributes.last_on_time || e.attributes.last_fired_time;\n\
+        \    const ts = when ? new Date(when).toLocaleString([], {weekday: 'short', hour: '2-digit', minute: '2-digit'})\
+        \ : '';\n    const msg = e.attributes.last_fired_message || '';\n    return {\n      type: 'custom:button-card',\n\
+        \      entity: e.entity_id,\n      show_icon: false, show_name: false, show_state: false,\n      styles:\
+        \ {\n        grid: [\n          {'grid-template-areas': '\"icon name dismiss\" \"icon msg dismiss\"'},\n\
+        \          {'grid-template-columns': '12vh 1fr 24vh'},\n          {'grid-template-rows': 'min-content min-content'},\n\
+        \          {'column-gap': '2vh'}\n        ],\n        card: [\n          {'background-color': 'rgba(255,255,255,0.12)'},\n\
+        \          {border: 'none'}, {'border-radius': '1vw'},\n          {padding: '2vh'}, {'margin-bottom': '1.5vh'},\n\
+        \          {opacity: active ? 1 : 0.55}\n        ],\n        custom_fields: {\n          icon: [{'grid-area':\
+        \ 'icon'}, {'align-self': 'center'}, {'justify-self': 'center'},\n                 {color: active ? (COLOR[e.attributes.priority]\
+        \ || '#ffb300') : '#b0b0b0'}],\n          name: [{'grid-area': 'name'}, {'justify-self': 'start'}, {'align-self':\
+        \ 'end'},\n                 {'font-size': '4.5vh'}, {'font-weight': 500}, {'text-align': 'left'}],\n   \
+        \       msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self': 'start'},\n              \
+        \  {'font-size': '3vh'}, {'font-weight': 300}, {opacity: 0.85}, {'text-align': 'left'}],\n          dismiss:\
+        \ [{'grid-area': 'dismiss'}, {'align-self': 'center'},\n                    {'justify-self': 'stretch'},\
+        \ {height: '100%'}]\n        }\n      },\n      custom_fields: {\n        icon: `<ha-icon icon=\"${e.attributes.icon\
+        \ || 'mdi:alert-circle'}\" style=\"--mdc-icon-size: 8vh;\"></ha-icon>`,\n        name: e.attributes.friendly_name\
+        \ || e.entity_id,\n        msg: active ? msg : `Cleared · ${ts}${msg ? ' — ' + msg : ''}`,\n        dismiss:\
+        \ {card: {\n          type: 'custom:button-card',\n          name: active ? 'DISMISS' : 'ACK',\n       \
+        \   tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},\n   \
+        \       styles: {\n            card: [{'background-color': 'rgba(255,255,255,0.25)'}, {border: 'none'},\n\
+        \                   {'border-radius': '1vw'}, {height: '100%'}, {'min-height': '12vh'}],\n            name:\
+        \ [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]\n          }\n        }}\n\
+        \      }\n    };\n  };\n\n  const all = Object.values(hass.states)\n    .filter(e => e.entity_id.startsWith('alert2.')\
+        \ && !EXCLUDE.includes(e.entity_id) && !e.attributes.is_acked);\n  const active = all.filter(e => e.state\
+        \ === 'on')\n    .sort((a, b) => {\n      const r = (RANK[a.attributes.priority] ?? 1) - (RANK[b.attributes.priority]\
         \ ?? 1);\n      if (r) return r;\n      return (b.attributes.last_on_time || '').localeCompare(a.attributes.last_on_time\
-        \ || '');\n    });\n  if (!alerts.length) {\n    return [{\n      type: 'custom:button-card',\n      show_icon:\
-        \ false, show_name: false,\n      styles: {\n        card: [{background: 'none'}, {border: 'none'}, {'padding-top':\
-        \ '10vh'}],\n        custom_fields: {empty: [{'font-size': '5vh'}, {'font-weight': 300}, {opacity: 0.7}]}\n\
-        \      },\n      custom_fields: {empty: '<ha-icon icon=\"mdi:check-circle-outline\" style=\"--mdc-icon-size:\
-        \ 7vh;\"></ha-icon>&nbsp; No active alerts'}\n    }];\n  }\n  return alerts.map(e => ({\n    type: 'custom:button-card',\n\
-        \    entity: e.entity_id,\n    show_icon: false, show_name: false, show_state: false,\n    styles: {\n \
-        \     grid: [\n        {'grid-template-areas': '\"icon name dismiss\" \"icon msg dismiss\"'},\n        {'grid-template-columns':\
-        \ '12vh 1fr 24vh'},\n        {'grid-template-rows': 'min-content min-content'},\n        {'column-gap':\
-        \ '2vh'}\n      ],\n      card: [\n        {'background-color': 'rgba(255,255,255,0.12)'},\n        {border:\
-        \ 'none'}, {'border-radius': '1vw'},\n        {padding: '2vh'}, {'margin-bottom': '1.5vh'}\n      ],\n \
-        \     custom_fields: {\n        icon: [{'grid-area': 'icon'}, {'align-self': 'center'}, {'justify-self':\
-        \ 'center'},\n               {color: COLOR[e.attributes.priority] || '#ffb300'}],\n        name: [{'grid-area':\
-        \ 'name'}, {'justify-self': 'start'}, {'align-self': 'end'},\n               {'font-size': '4.5vh'}, {'font-weight':\
-        \ 500}, {'text-align': 'left'}],\n        msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self':\
-        \ 'start'},\n              {'font-size': '3vh'}, {'font-weight': 300}, {opacity: 0.85}, {'text-align': 'left'}],\n\
-        \        dismiss: [{'grid-area': 'dismiss'}, {'align-self': 'center'},\n                  {'justify-self':\
-        \ 'stretch'}, {height: '100%'}]\n      }\n    },\n    custom_fields: {\n      icon: `<ha-icon icon=\"${e.attributes.icon\
-        \ || 'mdi:alert-circle'}\" style=\"--mdc-icon-size: 8vh;\"></ha-icon>`,\n      name: e.attributes.friendly_name\
-        \ || e.entity_id,\n      msg: e.attributes.last_fired_message || '',\n      dismiss: {card: {\n        type:\
-        \ 'custom:button-card',\n        name: 'DISMISS',\n        tap_action: {action: 'call-service', service:\
-        \ 'alert2.ack', target: {entity_id: e.entity_id}},\n        styles: {\n          card: [{'background-color':\
-        \ 'rgba(255,255,255,0.25)'}, {border: 'none'},\n                 {'border-radius': '1vw'}, {height: '100%'},\
-        \ {'min-height': '12vh'}],\n          name: [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing':\
-        \ '0.1em'}]\n        }\n      }}\n    }\n  }));\n]]]"
+        \ || '');\n    });\n\n  if (active.length) return active.map(e => row(e, true));\n\n  const cleared = all.filter(e\
+        \ => e.state === 'off' && e.attributes.last_fired_time)\n    .sort((a, b) => (b.attributes.last_fired_time\
+        \ || '').localeCompare(a.attributes.last_fired_time || ''));\n\n  if (cleared.length) {\n    return [...cleared.map(e\
+        \ => row(e, false)), {\n      type: 'custom:button-card',\n      name: 'ACK ALL',\n      tap_action: {action:\
+        \ 'call-service', service: 'alert2.ack_all'},\n      styles: {\n        card: [{'background-color': 'rgba(255,255,255,0.2)'},\
+        \ {border: 'none'},\n               {'border-radius': '1vw'}, {'min-height': '10vh'}, {'margin-top': '1vh'}],\n\
+        \        name: [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]\n      }\n  \
+        \  }];\n  }\n\n  return [{\n    type: 'custom:button-card',\n    show_icon: false, show_name: false,\n \
+        \   styles: {\n      card: [{background: 'none'}, {border: 'none'}, {'padding-top': '10vh'}],\n      custom_fields:\
+        \ {empty: [{'font-size': '5vh'}, {'font-weight': 300}, {opacity: 0.7}]}\n    },\n    custom_fields: {empty:\
+        \ '<ha-icon icon=\"mdi:check-circle-outline\" style=\"--mdc-icon-size: 7vh;\"></ha-icon>&nbsp; No active\
+        \ alerts'}\n  }];\n]]]"
 styles:
   custom_fields:
     message:
