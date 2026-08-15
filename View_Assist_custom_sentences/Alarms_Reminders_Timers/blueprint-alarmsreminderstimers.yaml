@@ -102,7 +102,7 @@ blueprint:
           default:
             - "set [a] timer for {when}"
             - "set [a] {when} timer"
-            - "(set|start) [a | an] {name} timer for {when}"
+            - "(set|start) [a | an | the | my] {name} timer for {when}"
           selector:
             object: {}
         reminder:
@@ -120,7 +120,7 @@ blueprint:
           description: "Sentences to create a new alarm."
           default:
             - "set [an] alarm for {when}"
-            - "set a {name} alarm for {when}"
+            - "set [a | an | the | my] {name} alarm for {when}"
           selector:
             object: {}
         listtimers:
