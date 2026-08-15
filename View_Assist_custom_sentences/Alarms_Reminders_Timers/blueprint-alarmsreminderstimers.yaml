@@ -158,9 +158,9 @@ blueprint:
           name: Cancel Timer
           description: "Sentences to stop or cancel a timer/alarm."
           default:
-            - "cancel my {name} (alarm | timer | reminder)"
+            - "(cancel | stop | turn off | end) [my | the | a] {name} (alarm | timer | reminder)"
             - "cancel my (alarm | timer | reminder) for {when}"
-            - "(Turn off | cancel | stop) [my] (alarm | timer | reminder)"
+            - "(turn off | cancel | stop) [my | the] (alarm | timer | reminder)"
           selector:
             object: {}
 trigger:
