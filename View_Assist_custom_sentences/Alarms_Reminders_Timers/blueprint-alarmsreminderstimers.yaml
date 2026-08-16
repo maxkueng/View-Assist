@@ -601,19 +601,25 @@ action:
                 if trigger.slots.when is defined else "" }}'
               include_expired: true
             response_variable: timer_info
+          # No name matched: fall back to the only running timer. STT often
+          # mangles an uncommon name, and with one timer that is what was meant.
+          - action: view_assist.get_timers
+            data:
+              device_id: "{{ timer_query_device_id }}"
+            response_variable: all_timers_info
           - variables:
               timer_id:
-                '{{ timer_info["result"][0].id if timer_info["result"] | length
-                > 0 else "" }}'
+                '{{ timer_info["result"][0].id if timer_info["result"] | length > 0
+                else (all_timers_info["result"][0].id if all_timers_info["result"] | length == 1 else "") }}'
               timer_class:
-                '{{ timer_info["result"][0].timer_class if timer_info["result"]
-                | length > 0 else "" }}'
+                '{{ timer_info["result"][0].timer_class if timer_info["result"] | length > 0
+                else (all_timers_info["result"][0].timer_class if all_timers_info["result"] | length == 1 else "") }}'
               timer_name:
-                '{{ timer_info["result"][0].name if timer_info["result"] | length
-                > 0 else "" }}'
+                '{{ timer_info["result"][0].name if timer_info["result"] | length > 0
+                else (all_timers_info["result"][0].name if all_timers_info["result"] | length == 1 else "") }}'
               timer_sentence:
-                '{{ timer_info["result"][0].extra_info.sentence if timer_info["result"]
-                | length > 0 else "" }}'
+                '{{ timer_info["result"][0].extra_info.sentence if timer_info["result"] | length > 0
+                else (all_timers_info["result"][0].extra_info.sentence if all_timers_info["result"] | length == 1 else "") }}'
           - if:
               - condition: template
                 value_template: '{% if timer_id != "" %}true{% endif %}'
