@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
-"""Generate the View Assist 'alerts' (persistent alert stack) view, v3.
+"""Generate the View Assist 'alerts' (persistent alert stack) view, v4.
 
 Three render states, all built at render time from alert2 entities:
-  1. Active (on + unacked) alerts -> full rows with DISMISS (alert2.ack).
+  1. Active (on + unacked) alerts -> full rows with dismiss (alert2.ack).
   2. No active, but fired-and-never-acked history -> dimmed rows with
-     per-row ACK plus an ACK ALL footer (alert2.ack_all).
+     per-row ack plus an Ack All footer (alert2.ack_all).
   3. Nothing -> "No active alerts".
 
-Emits alerts.yaml (fork, root-card format) and alerts_view.json (dashboard view).
+v4 restyles everything to match the timer cards in js_modules/timers.js
+(viewassist.helpers.timerCards / singleTimerCard): same 90vw rounded rows
+on rgba(0,0,0,0.7), vw-based fonts (name 3vw, detail 2vw), icon-only
+action buttons fused to the row's right edge, and a single-alert hero
+laid out like the single-timer card with a pill action button.
+
+Emits alert2.yaml (fork, root-card format) and alert2_view.json (dashboard
+view, consumed by deploy.py).
 """
 import json
+import os
 
 import yaml
 
@@ -17,6 +25,23 @@ ROWS_JS = """[[[
   const EXCLUDE = ['alert2.alert2_error', 'alert2.alert2_warning', 'alert2.alert2_global_exception'];
   const RANK = {high: 0, medium: 1, low: 2};
   const COLOR = {high: '#ff5252', medium: '#ffb300', low: '#66bb6a'};
+
+  const edgeButton = (e, active) => ({
+    type: 'custom:button-card',
+    name: active ? 'Dismiss' : 'Ack',
+    icon: active ? 'mdi:bell-off' : 'mdi:check',
+    show_name: false,
+    tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},
+    styles: {
+      card: [
+        {'justify-self': 'end'}, {'align-self': 'center'},
+        {'border-radius': '0 3vh 3vh 0'}, {border: 'none'},
+        {'background-color': active ? 'var(--red-color)' : 'var(--blue-color)'},
+        {height: '20vh'}, {width: '10vw'}
+      ],
+      icon: [{color: 'white'}]
+    }
+  });
 
   const row = (e, active) => {
     const when = e.attributes.last_on_time || e.attributes.last_fired_time;
@@ -28,45 +53,51 @@ ROWS_JS = """[[[
       show_icon: false, show_name: false, show_state: false,
       styles: {
         grid: [
-          {'grid-template-areas': '"icon name dismiss" "icon msg dismiss"'},
-          {'grid-template-columns': '12vh 1fr 24vh'},
-          {'grid-template-rows': 'min-content min-content'},
-          {'column-gap': '2vh'}
+          {'grid-template-areas': '"icon name ack" "icon msg ack"'},
+          {'grid-template-columns': '18vh 1fr 10vw'},
+          {'grid-template-rows': '1fr 1fr'}
         ],
         card: [
-          {'background-color': 'rgba(0,0,0,0.35)'},
-          {border: 'none'}, {'border-radius': '1vw'},
-          {padding: '2vh'}, {'margin-bottom': '1.5vh'},
+          {'background-color': 'rgba(0, 0, 0, 0.7)'},
+          {border: 'none'}, {'border-radius': '3vh'},
+          {padding: '0'}, {margin: '0 auto 1.5vh auto'},
+          {width: '90vw'},
           {opacity: active ? 1 : 0.55}
         ],
         custom_fields: {
           icon: [{'grid-area': 'icon'}, {'align-self': 'center'}, {'justify-self': 'center'},
                  {color: active ? (COLOR[e.attributes.priority] || '#ffb300') : '#b0b0b0'}],
           name: [{'grid-area': 'name'}, {'justify-self': 'start'}, {'align-self': 'end'},
-                 {'font-size': '4.5vh'}, {'font-weight': 500}, {'text-align': 'left'}],
+                 {color: 'white'}, {'font-size': '3vw'}, {'text-align': 'left'}],
           msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self': 'start'},
-                {'font-size': '3vh'}, {'font-weight': 300}, {opacity: 0.85}, {'text-align': 'left'}],
-          dismiss: [{'grid-area': 'dismiss'}, {'align-self': 'center'},
-                    {'justify-self': 'stretch'}, {height: '100%'}]
+                {color: 'white'}, {'font-size': '2vw'}, {'font-weight': 300}, {opacity: 0.85},
+                {'text-align': 'left'}],
+          ack: [{'grid-area': 'ack'}, {'justify-self': 'end'}, {padding: '0'}]
         }
       },
       custom_fields: {
-        icon: `<ha-icon icon="${e.attributes.icon || 'mdi:alert-circle'}" style="--mdc-icon-size: 8vh;"></ha-icon>`,
+        icon: `<ha-icon icon="${e.attributes.icon || 'mdi:alert-circle'}" style="--mdc-icon-size: 15vh; margin: 0;"></ha-icon>`,
         name: e.attributes.friendly_name || e.entity_id,
         msg: active ? msg : `Cleared · ${ts}${msg ? ' — ' + msg : ''}`,
-        dismiss: {card: {
-          type: 'custom:button-card',
-          name: active ? 'DISMISS' : 'ACK',
-          tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},
-          styles: {
-            card: [{'background-color': 'rgba(0,0,0,0.45)'}, {border: 'none'},
-                   {'border-radius': '1vw'}, {height: '100%'}, {'min-height': '12vh'}],
-            name: [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]
-          }
-        }}
+        ack: {card: edgeButton(e, active)}
       }
     };
   };
+
+  const pillButton = (name, tap_action, width, height, font_size, extra_card_styles = []) => ({
+    type: 'custom:button-card',
+    name: name,
+    tap_action: tap_action,
+    styles: {
+      card: [
+        {'justify-content': 'center'}, {'align-items': 'center'},
+        {width: width}, {'border-radius': '6vh'}, {height: height},
+        {border: 'none'}, {'background-color': 'rgba(0, 0, 0, 0.45)'},
+        ...extra_card_styles
+      ],
+      name: [{'font-size': font_size}, {color: 'white'}, {'font-weight': 'bold'}, {'text-align': 'center'}]
+    }
+  });
 
   const hero = (e) => ({
     type: 'custom:button-card',
@@ -74,7 +105,7 @@ ROWS_JS = """[[[
     show_icon: false, show_name: false, show_state: false,
     styles: {
       grid: [
-        {'grid-template-areas': '"icon name" "icon msg" "dismiss dismiss"'},
+        {'grid-template-areas': '"icon name" "icon msg" "act act"'},
         {'grid-template-columns': 'min-content 1fr'},
         {'grid-template-rows': 'min-content min-content min-content'},
         {'column-gap': '5vh'}, {'row-gap': '1vh'}
@@ -85,28 +116,18 @@ ROWS_JS = """[[[
                {'border-right': '2px solid rgba(255,255,255,0.6)'}, {'padding-right': '6vh'},
                {color: 'white'}],
         name: [{'grid-area': 'name'}, {'justify-self': 'start'}, {'align-self': 'end'},
-               {'font-size': '12vh'}, {'font-weight': 500}, {'text-align': 'left'}],
+               {color: 'white'}, {'font-size': '6vw'}, {'text-align': 'left'}],
         msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self': 'start'},
-              {'font-size': '6.5vh'}, {'font-weight': 300}, {opacity: 0.9}, {'text-align': 'left'},
-              {'text-wrap': 'balance'}],
-        dismiss: [{'grid-area': 'dismiss'}, {'justify-self': 'center'}, {'margin-top': '8vh'},
-                  {width: '55%'}]
+              {color: 'white'}, {'font-size': '4vw'}, {'font-weight': 300}, {opacity: 0.9},
+              {'text-align': 'left'}, {'text-wrap': 'balance'}],
+        act: [{'grid-area': 'act'}, {'justify-self': 'center'}, {'margin-top': '8vh'}]
       }
     },
     custom_fields: {
       icon: `<ha-icon icon="${e.attributes.icon || 'mdi:alert-circle'}" style="--mdc-icon-size: 30vh; margin: 0;"></ha-icon>`,
       name: e.attributes.friendly_name || e.entity_id,
       msg: e.attributes.last_fired_message || '',
-      dismiss: {card: {
-        type: 'custom:button-card',
-        name: 'DISMISS',
-        tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},
-        styles: {
-          card: [{'background-color': 'rgba(0,0,0,0.45)'}, {border: 'none'},
-                 {'border-radius': '1vw'}, {'min-height': '16vh'}],
-          name: [{'font-size': '5.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]
-        }
-      }}
+      act: {card: pillButton('Dismiss', {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}}, '40vw', '12vh', '5vh')}
     }
   });
 
@@ -126,16 +147,9 @@ ROWS_JS = """[[[
     .sort((a, b) => (b.attributes.last_fired_time || '').localeCompare(a.attributes.last_fired_time || ''));
 
   if (cleared.length) {
-    return [...cleared.map(e => row(e, false)), {
-      type: 'custom:button-card',
-      name: 'ACK ALL',
-      tap_action: {action: 'call-service', service: 'alert2.ack_all'},
-      styles: {
-        card: [{'background-color': 'rgba(0,0,0,0.45)'}, {border: 'none'},
-               {'border-radius': '1vw'}, {'min-height': '10vh'}, {'margin-top': '1vh'}],
-        name: [{'font-size': '3.5vh'}, {'font-weight': 500}, {'letter-spacing': '0.1em'}]
-      }
-    }];
+    const ackAll = pillButton('Ack All', {action: 'call-service', service: 'alert2.ack_all'},
+      '30vw', '10vh', '4vh', [{'justify-self': 'center'}, {'margin-top': '2vh'}]);
+    return [...cleared.map(e => row(e, false)), ackAll];
   }
 
   return [{
@@ -145,9 +159,9 @@ ROWS_JS = """[[[
       grid: [{'grid-template-areas': '"empty"'}, {'grid-template-columns': '1fr'}],
       card: [{background: 'none'}, {border: 'none'}, {'padding-top': '10vh'}],
       custom_fields: {empty: [{'grid-area': 'empty'}, {'justify-self': 'stretch'}, {width: '100%'},
-                              {'font-size': '5vh'}, {'font-weight': 300}, {opacity: 0.7}]}
+                              {color: 'white'}, {'font-size': '3.5vw'}, {'font-weight': 300}, {opacity: 0.7}]}
     },
-    custom_fields: {empty: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><ha-icon icon="mdi:check-circle-outline" style="--mdc-icon-size: 7vh; margin: 0;"></ha-icon>&nbsp; No active alerts</div>'}
+    custom_fields: {empty: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><ha-icon icon="mdi:check-circle-outline" style="--mdc-icon-size: 3.5vw; margin: 0;"></ha-icon>&nbsp; No active alerts</div>'}
   }];
 ]]]"""
 
@@ -166,7 +180,7 @@ BG_JS = """[[[
 
 root_card = {
     "type": "custom:button-card",
-    "variables": {"alertsstackversion": "3.2.1"},
+    "variables": {"alertsstackversion": "4.1.0"},
     "template": ["variable_template", "body_template"],
     "triggers_update": "all",
     "custom_fields": {
@@ -179,6 +193,7 @@ root_card = {
                     "margin": 0,
                     "card_margin": 0,
                     "grid-template-columns": "1fr",
+                    "justify-items": "center",
                 },
                 "cards": ROWS_JS,
             }
@@ -202,14 +217,9 @@ root_card = {
 
 view = {"type": "panel", "title": "Alerts", "path": "alert2", "cards": [root_card]}
 
-with open("alert2_view_card.yaml", "w") as f:
+out = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(out, "alert2.yaml"), "w") as f:
     yaml.dump(root_card, f, sort_keys=False, allow_unicode=True, width=110)
-with open("alerts_view.json", "w") as f:
+with open(os.path.join(out, "alert2_view.json"), "w") as f:
     json.dump(view, f, indent=2)
-with open("replace_view.txt", "w") as f:
-    f.write(
-        "for i in range(len(config['views'])):\n"
-        "    if config['views'][i].get('path') in ('alerts', 'alert2'):\n"
-        "        config['views'][i] = " + repr(view)
-    )
-print("wrote alerts.yaml, alerts_view.json, replace_view.txt (v3)")
+print("wrote alert2.yaml, alert2_view.json")

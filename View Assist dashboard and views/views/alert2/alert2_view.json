@@ -1,0 +1,69 @@
+{
+  "type": "panel",
+  "title": "Alerts",
+  "path": "alert2",
+  "cards": [
+    {
+      "type": "custom:button-card",
+      "variables": {
+        "alertsstackversion": "4.1.0"
+      },
+      "template": [
+        "variable_template",
+        "body_template"
+      ],
+      "triggers_update": "all",
+      "custom_fields": {
+        "title": "Alerts",
+        "message": {
+          "card": {
+            "type": "custom:layout-card",
+            "layout_type": "grid-layout",
+            "layout": {
+              "margin": 0,
+              "card_margin": 0,
+              "grid-template-columns": "1fr",
+              "justify-items": "center"
+            },
+            "cards": "[[[\n  const EXCLUDE = ['alert2.alert2_error', 'alert2.alert2_warning', 'alert2.alert2_global_exception'];\n  const RANK = {high: 0, medium: 1, low: 2};\n  const COLOR = {high: '#ff5252', medium: '#ffb300', low: '#66bb6a'};\n\n  const edgeButton = (e, active) => ({\n    type: 'custom:button-card',\n    name: active ? 'Dismiss' : 'Ack',\n    icon: active ? 'mdi:bell-off' : 'mdi:check',\n    show_name: false,\n    tap_action: {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}},\n    styles: {\n      card: [\n        {'justify-self': 'end'}, {'align-self': 'center'},\n        {'border-radius': '0 3vh 3vh 0'}, {border: 'none'},\n        {'background-color': active ? 'var(--red-color)' : 'var(--blue-color)'},\n        {height: '20vh'}, {width: '10vw'}\n      ],\n      icon: [{color: 'white'}]\n    }\n  });\n\n  const row = (e, active) => {\n    const when = e.attributes.last_on_time || e.attributes.last_fired_time;\n    const ts = when ? new Date(when).toLocaleString([], {weekday: 'short', hour: '2-digit', minute: '2-digit'}) : '';\n    const msg = e.attributes.last_fired_message || '';\n    return {\n      type: 'custom:button-card',\n      entity: e.entity_id,\n      show_icon: false, show_name: false, show_state: false,\n      styles: {\n        grid: [\n          {'grid-template-areas': '\"icon name ack\" \"icon msg ack\"'},\n          {'grid-template-columns': '18vh 1fr 10vw'},\n          {'grid-template-rows': '1fr 1fr'}\n        ],\n        card: [\n          {'background-color': 'rgba(0, 0, 0, 0.7)'},\n          {border: 'none'}, {'border-radius': '3vh'},\n          {padding: '0'}, {margin: '0 auto 1.5vh auto'},\n          {width: '90vw'},\n          {opacity: active ? 1 : 0.55}\n        ],\n        custom_fields: {\n          icon: [{'grid-area': 'icon'}, {'align-self': 'center'}, {'justify-self': 'center'},\n                 {color: active ? (COLOR[e.attributes.priority] || '#ffb300') : '#b0b0b0'}],\n          name: [{'grid-area': 'name'}, {'justify-self': 'start'}, {'align-self': 'end'},\n                 {color: 'white'}, {'font-size': '3vw'}, {'text-align': 'left'}],\n          msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self': 'start'},\n                {color: 'white'}, {'font-size': '2vw'}, {'font-weight': 300}, {opacity: 0.85},\n                {'text-align': 'left'}],\n          ack: [{'grid-area': 'ack'}, {'justify-self': 'end'}, {padding: '0'}]\n        }\n      },\n      custom_fields: {\n        icon: `<ha-icon icon=\"${e.attributes.icon || 'mdi:alert-circle'}\" style=\"--mdc-icon-size: 15vh; margin: 0;\"></ha-icon>`,\n        name: e.attributes.friendly_name || e.entity_id,\n        msg: active ? msg : `Cleared \u00b7 ${ts}${msg ? ' \u2014 ' + msg : ''}`,\n        ack: {card: edgeButton(e, active)}\n      }\n    };\n  };\n\n  const pillButton = (name, tap_action, width, height, font_size, extra_card_styles = []) => ({\n    type: 'custom:button-card',\n    name: name,\n    tap_action: tap_action,\n    styles: {\n      card: [\n        {'justify-content': 'center'}, {'align-items': 'center'},\n        {width: width}, {'border-radius': '6vh'}, {height: height},\n        {border: 'none'}, {'background-color': 'rgba(0, 0, 0, 0.45)'},\n        ...extra_card_styles\n      ],\n      name: [{'font-size': font_size}, {color: 'white'}, {'font-weight': 'bold'}, {'text-align': 'center'}]\n    }\n  });\n\n  const hero = (e) => ({\n    type: 'custom:button-card',\n    entity: e.entity_id,\n    show_icon: false, show_name: false, show_state: false,\n    styles: {\n      grid: [\n        {'grid-template-areas': '\"icon name\" \"icon msg\" \"act act\"'},\n        {'grid-template-columns': 'min-content 1fr'},\n        {'grid-template-rows': 'min-content min-content min-content'},\n        {'column-gap': '5vh'}, {'row-gap': '1vh'}\n      ],\n      card: [{background: 'none'}, {border: 'none'}, {padding: '4vh'}, {'margin-top': '4vh'}],\n      custom_fields: {\n        icon: [{'grid-area': 'icon'}, {'align-self': 'center'}, {'justify-self': 'end'},\n               {'border-right': '2px solid rgba(255,255,255,0.6)'}, {'padding-right': '6vh'},\n               {color: 'white'}],\n        name: [{'grid-area': 'name'}, {'justify-self': 'start'}, {'align-self': 'end'},\n               {color: 'white'}, {'font-size': '6vw'}, {'text-align': 'left'}],\n        msg: [{'grid-area': 'msg'}, {'justify-self': 'start'}, {'align-self': 'start'},\n              {color: 'white'}, {'font-size': '4vw'}, {'font-weight': 300}, {opacity: 0.9},\n              {'text-align': 'left'}, {'text-wrap': 'balance'}],\n        act: [{'grid-area': 'act'}, {'justify-self': 'center'}, {'margin-top': '8vh'}]\n      }\n    },\n    custom_fields: {\n      icon: `<ha-icon icon=\"${e.attributes.icon || 'mdi:alert-circle'}\" style=\"--mdc-icon-size: 30vh; margin: 0;\"></ha-icon>`,\n      name: e.attributes.friendly_name || e.entity_id,\n      msg: e.attributes.last_fired_message || '',\n      act: {card: pillButton('Dismiss', {action: 'call-service', service: 'alert2.ack', target: {entity_id: e.entity_id}}, '40vw', '12vh', '5vh')}\n    }\n  });\n\n  const all = Object.values(hass.states)\n    .filter(e => e.entity_id.startsWith('alert2.') && !EXCLUDE.includes(e.entity_id) && !e.attributes.is_acked);\n  const active = all.filter(e => e.state === 'on')\n    .sort((a, b) => {\n      const r = (RANK[a.attributes.priority] ?? 1) - (RANK[b.attributes.priority] ?? 1);\n      if (r) return r;\n      return (b.attributes.last_on_time || '').localeCompare(a.attributes.last_on_time || '');\n    });\n\n  if (active.length === 1) return [hero(active[0])];\n  if (active.length) return active.map(e => row(e, true));\n\n  const cleared = all.filter(e => e.state === 'off' && e.attributes.last_fired_time)\n    .sort((a, b) => (b.attributes.last_fired_time || '').localeCompare(a.attributes.last_fired_time || ''));\n\n  if (cleared.length) {\n    const ackAll = pillButton('Ack All', {action: 'call-service', service: 'alert2.ack_all'},\n      '30vw', '10vh', '4vh', [{'justify-self': 'center'}, {'margin-top': '2vh'}]);\n    return [...cleared.map(e => row(e, false)), ackAll];\n  }\n\n  return [{\n    type: 'custom:button-card',\n    show_icon: false, show_name: false,\n    styles: {\n      grid: [{'grid-template-areas': '\"empty\"'}, {'grid-template-columns': '1fr'}],\n      card: [{background: 'none'}, {border: 'none'}, {'padding-top': '10vh'}],\n      custom_fields: {empty: [{'grid-area': 'empty'}, {'justify-self': 'stretch'}, {width: '100%'},\n                              {color: 'white'}, {'font-size': '3.5vw'}, {'font-weight': 300}, {opacity: 0.7}]}\n    },\n    custom_fields: {empty: '<div style=\"display:flex; align-items:center; justify-content:center; width:100%;\"><ha-icon icon=\"mdi:check-circle-outline\" style=\"--mdc-icon-size: 3.5vw; margin: 0;\"></ha-icon>&nbsp; No active alerts</div>'}\n  }];\n]]]"
+          }
+        }
+      },
+      "styles": {
+        "card": [
+          {
+            "background-color": "[[[\n  const EXCLUDE = ['alert2.alert2_error', 'alert2.alert2_warning', 'alert2.alert2_global_exception'];\n  const RANK = {high: 3, medium: 2, low: 1};\n  const BG = {3: '#8f1f1f', 2: '#9a5b00', 1: '#0b5d8f'};\n  let best = 0;\n  for (const e of Object.values(hass.states)) {\n    if (!e.entity_id.startsWith('alert2.') || EXCLUDE.includes(e.entity_id)) continue;\n    if (e.state !== 'on' || e.attributes.is_acked) continue;\n    best = Math.max(best, RANK[e.attributes.priority] ?? 2);\n  }\n  return best ? BG[best] : '#1c1c1c';\n]]]"
+          },
+          {
+            "transition": "background-color 0.6s ease"
+          }
+        ],
+        "custom_fields": {
+          "message": [
+            {
+              "grid-area": "message"
+            },
+            {
+              "justify-self": "center"
+            },
+            {
+              "align-self": "start"
+            },
+            {
+              "width": "94%"
+            },
+            {
+              "margin-top": "9vh"
+            },
+            {
+              "max-height": "78vh"
+            },
+            {
+              "overflow-y": "auto"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
