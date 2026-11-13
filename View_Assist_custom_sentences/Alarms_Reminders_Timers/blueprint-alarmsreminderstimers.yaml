@@ -287,8 +287,11 @@ action:
         {% endif %}
         {{ ns.out }}
       # Per-device sound routing, resolved once so the repeat loops stay flat.
+      # An ESPHome satellite rings its own timers in firmware, so the owner
+      # of the timer gets no alarm sound from here.
       alarm_targets: >-
         {% set ns = namespace(out=[]) %}
+        {% set esphome_entities = integration_entities('esphome') %}
         {% for e in target_devices %}
           {% set mic = state_attr(e, 'mic_device') %}
           {% set dev = device_id(mic) if mic else none %}
@@ -298,7 +301,8 @@ action:
             'entity': e,
             'use_onboard': use_vaca_onboard_sound and is_vaca and sw != '',
             'switch': sw,
-            'mediaplayer': state_attr(e, 'mediaplayer_device')
+            'mediaplayer': state_attr(e, 'mediaplayer_device'),
+            'rings_itself': e == target_satellite_device and mic in esphome_entities
           }] %}
         {% endfor %}
         {{ ns.out }}
@@ -497,8 +501,7 @@ action:
                 - if:
                     - condition: template
                       value_template:
-                        "{% if trigger.id == 'ringalarm' %}true{% else %}false{%
-                        endif %}"
+                        "{{ trigger.id == 'ringalarm' and not repeat.item.rings_itself }}"
                   then:
                     - if:
                         - condition: template
